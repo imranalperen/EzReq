@@ -1,4 +1,4 @@
-const success_HTTP_statusses = [200, 201];
+const success_HTTP_codes = [200, 201];
 class EzReq {
   #api_url = null;
   #headers = null;
@@ -40,32 +40,60 @@ class EzReq {
     }
   }
 
+  checkCallback(callback) {
+    if (!callback) return;
+    if (typeof callback.fn !== "function") {
+      throw new Error("callback must be a function");
+    }
+  }
+
   async GET(args) {
     this.updateUrl(args);
-    const raw_response = await fetch(this.#api_url, {
-      method: "GET",
-      headers: args.headers || this.#headers,
-    });
+    this.checkCallback(args.callback);
+    let raw_response;
+    try {
+      raw_response = await fetch(this.#api_url, {
+        method: "GET",
+        headers: args.headers || this.#headers,
+      });
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
     return await this.handleResponse(raw_response, args.callback);
   }
 
   async POST(args) {
     this.updateUrl(args);
-    const raw_response = await fetch(this.#api_url, {
-      method: "POST",
-      headers: args.headers || this.#headers,
-      body: JSON.stringify(args.body),
-    });
+    this.checkCallback(args.callback);
+    let raw_response;
+    try {
+      raw_response = await fetch(this.#api_url, {
+        method: "POST",
+        headers: args.headers || this.#headers,
+        body: JSON.stringify(args.body),
+      });
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
     return await this.handleResponse(raw_response, args.callback);
   }
 
   async PUT(args) {
     this.updateUrl(args);
-    const raw_response = await fetch(this.#api_url, {
-      method: "PUT",
-      headers: args.headers || this.#headers,
-      body: JSON.stringify(args.body),
-    });
+    this.checkCallback(args.callback);
+    let raw_response;
+    try {
+      raw_response = await fetch(this.#api_url, {
+        method: "PUT",
+        headers: args.headers || this.#headers,
+        body: JSON.stringify(args.body),
+      });
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
     return await this.handleResponse(raw_response, args.callback);
   }
 
@@ -74,13 +102,10 @@ class EzReq {
   }
 
   async handleResponse(res, callback) {
-    if (success_HTTP_statusses.includes(res.status)) {
-      const response = await res.json();
-      if (callback) {
-        if (typeof callback.fn !== "function") {
-          throw new Error("callback must be a function");
-        }
-        callback.fn(response, callback.args);
+    if (success_HTTP_codes.includes(res.status)) {
+      let response = await res.json();
+      if (callback?.fn) {
+        response = callback.fn(response, callback.args);
       }
       return response;
     } else {
@@ -105,7 +130,7 @@ const callback = (response, your_args) => {
   console.log(
     "if token error update token and re request maybe fire a swall or toast bla bla bla",
   );
-  console.log(your_args);
+  return response;
 };
 
 (async () => {
@@ -116,15 +141,15 @@ const callback = (response, your_args) => {
       sort: "desc",
     },
     hash: "hello",
-    // headers: {
-    //   lorem: "ipsum",
-    // },
-    // callback: {
-    //   fn: callback,
-    //   args: "this is some cb args",
-    // },
+    headers: {
+      lorem: "ipsum",
+    },
+    callback: {
+      fn: callback,
+      args: "this is some cb args",
+    },
   });
-  // console.log(getRes);
+  console.log(getRes);
 
   const postRes = await apiv1.POST({
     path: "/products",
